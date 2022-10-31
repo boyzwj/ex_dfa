@@ -4,7 +4,7 @@
 
 ## Usage
 
-```
+```elixir
 
 > ExDfa.build_words(["fuckyou","fuckoff","操你妈"])  
 :ok
@@ -19,7 +19,7 @@
 
 ### benchmark VS global match (filter) 过滤
 
-```
+```elixir
 Operating System: Linux
 CPU Information: 12th Gen Intel(R) Core(TM) i7-12700K
 Number of Available Cores: 20
