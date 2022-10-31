@@ -50,7 +50,7 @@ GLOBAL_MATCH        0.92 K - 284.75x slower +1.08 ms
 
 ### benchmark VS global match (check) 检测
 
-```
+```elixir
 Operating System: Linux
 CPU Information: 12th Gen Intel(R) Core(TM) i7-12700K
 Number of Available Cores: 20
