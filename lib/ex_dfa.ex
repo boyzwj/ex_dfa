@@ -1,5 +1,6 @@
 defmodule ExDfa do
-  defstruct status: :safe, map: %{}, tmp: ""
+  defstruct status: :safe, map: %{}, tmp: "", tmp2: "", filtered: ""
+  @maskchar "*"
 
   @spec build_file(String.t()) :: :ok
   def build_file(path) do
@@ -79,19 +80,59 @@ defmodule ExDfa do
         throw({:unsafe, e})
 
       data when is_map(data) ->
-        do_check(t, %{st | map: data, status: :check, tmp: e})
+        do_check_check(t, t, %{st | map: data, status: :check, tmp: e})
     end
   end
 
-  defp do_check(_, %__MODULE__{status: :check, map: :unsafe, tmp: tmp}), do: throw({:unsafe, tmp})
+  defp do_check_check([], _ot, _st), do: :safe
 
-  defp do_check([], %__MODULE__{status: :check}), do: :safe
-
-  defp do_check([e | t], %__MODULE__{status: :check, map: map, tmp: tmp} = st) when is_map(map) do
+  defp do_check_check([e | t], ot, %__MODULE__{status: :check, map: map, tmp: tmp} = st)
+       when is_map(map) do
     with nil <- Map.get(map, e) do
-      do_check(t, %__MODULE__{})
+      do_check(ot, %__MODULE__{})
     else
-      map -> do_check(t, %{st | map: map, tmp: tmp <> e})
+      :unsafe -> throw({:unsafe, tmp <> e})
+      map -> do_check_check(t, ot, %{st | map: map, tmp: tmp <> e})
+    end
+  end
+
+  def filter(content) do
+    String.graphemes(content) |> do_filter(%__MODULE__{})
+  end
+
+  defp do_filter([], %__MODULE__{filtered: filtered, tmp: tmp}), do: filtered <> tmp
+
+  defp do_filter(
+         [e | t],
+         %__MODULE__{tmp: _tmp, filtered: filtered, map: _map, status: :safe} = st
+       ) do
+    with nil <- find(e) do
+      do_filter(t, %{st | filtered: filtered <> e})
+    else
+      :unsafe ->
+        do_filter(t, %{st | filtered: filtered <> @maskchar, status: :safe})
+
+      data when is_map(data) ->
+        do_filter_check(t, t, %{st | map: data, status: :check, tmp: e, tmp2: e})
+    end
+  end
+
+  defp do_filter_check([], _ot, %__MODULE__{filtered: filtered, tmp: tmp}), do: filtered <> tmp
+
+  defp do_filter_check(
+         [e | t],
+         ot,
+         %__MODULE__{status: :check, map: map, tmp: tmp, tmp2: tmp2, filtered: filtered} = st
+       )
+       when is_map(map) do
+    with nil <- Map.get(map, e) do
+      do_filter(ot, %{st | filtered: filtered <> tmp2, tmp: "", tmp2: "", status: :safe})
+    else
+      :unsafe ->
+        do_filter(t, %__MODULE__{filtered: filtered <> @maskchar})
+
+      map when is_map(map) ->
+        do_filter_check(t, ot, %{st | map: map, tmp: tmp <> e, status: :check})
     end
   end
 end
