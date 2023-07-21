@@ -1,6 +1,6 @@
 defmodule ExDfa do
   defstruct status: :safe, map: %{}, tmp: "", tmp2: "", filtered: ""
-  @maskchar "*"
+  @mask_char "*"
 
   @spec build_file(String.t()) :: :ok
   def build_file(path) do
@@ -19,7 +19,7 @@ defmodule ExDfa do
   defp build_words(res, [word | t]) do
     String.graphemes(word)
     |> Enum.reverse()
-    |> scan(:unsafe, res)
+    |> scan(%{unsafe: true}, res)
     |> build_words(t)
   end
 
@@ -27,10 +27,10 @@ defmodule ExDfa do
     oc = Map.get(res, e)
 
     cond do
-      oc == nil or c == :unsafe ->
+      oc == nil or c == %{unsafe: true} ->
         Map.put(res, e, c)
 
-      oc == :unsafe ->
+      oc == %{unsafe: true} ->
         res
 
       true ->
@@ -51,16 +51,8 @@ defmodule ExDfa do
     deep_merge(left, right)
   end
 
-  defp deep_resolve(_key, :unsafe, _right) do
-    :unsafe
-  end
-
-  defp deep_resolve(_key, _left, :unsafe) do
-    :unsafe
-  end
-
-  defp deep_resolve(_key, _left, right) do
-    right
+  defp deep_resolve(_key, _left, _right) do
+    throw("Conflict")
   end
 
   defp to_data(dict) do
@@ -84,7 +76,7 @@ defmodule ExDfa do
     with nil <- find(e) do
       do_check(t, st)
     else
-      :unsafe ->
+      %{unsafe: true} ->
         throw({:unsafe, e})
 
       data when is_map(data) ->
@@ -96,10 +88,13 @@ defmodule ExDfa do
 
   defp do_check_check([e | t], ot, %__MODULE__{status: :check, map: map, tmp: tmp} = st)
        when is_map(map) do
+    if Map.has_key?(map, :unsafe) do
+      throw({:unsafe, tmp})
+    end
+
     with nil <- Map.get(map, e) do
       do_check(ot, %__MODULE__{})
     else
-      :unsafe -> throw({:unsafe, tmp <> e})
       map -> do_check_check(t, ot, %{st | map: map, tmp: tmp <> e})
     end
   end
@@ -117,8 +112,8 @@ defmodule ExDfa do
     with nil <- find(e) do
       do_filter(t, %{st | filtered: filtered <> e})
     else
-      :unsafe ->
-        do_filter(t, %{st | filtered: filtered <> @maskchar, status: :safe})
+      %{unsafe: true} ->
+        do_filter(t, %{st | filtered: filtered <> @mask_char, status: :safe})
 
       data when is_map(data) ->
         do_filter_check(t, t, %{st | map: data, status: :check, tmp: e, tmp2: e})
@@ -136,8 +131,8 @@ defmodule ExDfa do
     with nil <- Map.get(map, e) do
       do_filter(ot, %{st | filtered: filtered <> tmp2, tmp: "", tmp2: "", status: :safe})
     else
-      :unsafe ->
-        do_filter(t, %__MODULE__{filtered: filtered <> @maskchar})
+      %{unsafe: true} ->
+        do_filter(t, %__MODULE__{filtered: filtered <> @mask_char})
 
       map when is_map(map) ->
         do_filter_check(t, ot, %{st | map: map, tmp: tmp <> e, status: :check})
