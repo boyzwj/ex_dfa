@@ -34,8 +34,10 @@ defmodule ExDfa do
         res
 
       true ->
+        IO.inspect(oc)
+        IO.inspect(c)
         nc = deep_merge(oc, c)
-        Map.put(res, e, nc)
+        Map.put(res, e, nc) |> IO.inspect()
     end
   end
 
@@ -49,6 +51,14 @@ defmodule ExDfa do
 
   defp deep_resolve(_key, left = %{}, right = %{}) do
     deep_merge(left, right)
+  end
+
+  defp deep_resolve(_key, :unsafe, _right) do
+    :unsafe
+  end
+
+  defp deep_resolve(_key, _left, :unsafe) do
+    :unsafe
   end
 
   defp deep_resolve(_key, _left, right) do
