@@ -51,8 +51,8 @@ defmodule ExDfa do
     deep_merge(left, right)
   end
 
-  defp deep_resolve(_key, _left, _right) do
-    throw("Conflict")
+  defp deep_resolve(_key, left, _right) do
+    left
   end
 
   defp to_data(dict) do
