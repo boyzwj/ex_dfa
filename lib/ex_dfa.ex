@@ -34,10 +34,8 @@ defmodule ExDfa do
         res
 
       true ->
-        IO.inspect(oc)
-        IO.inspect(c)
         nc = deep_merge(oc, c)
-        Map.put(res, e, nc) |> IO.inspect()
+        Map.put(res, e, nc)
     end
   end
 
