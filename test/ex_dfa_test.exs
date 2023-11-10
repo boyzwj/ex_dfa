@@ -12,6 +12,6 @@ defmodule ExDfaTest do
   end
 
   test "filter" do
-    assert ExDfa.filter("fucking222毛泽东") == "*ing222*"
+    assert ExDfa.filter("Fucking222毛泽东") == "****ing222***"
   end
 end

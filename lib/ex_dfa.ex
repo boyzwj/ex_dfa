@@ -1,5 +1,5 @@
 defmodule ExDfa do
-  defstruct status: :safe, map: %{}, tmp: "", tmp2: "", filtered: ""
+  defstruct status: :safe, map: %{}, tmp: "", tmp2: [], filtered: ""
   @mask_char "*"
 
   @spec build_file(String.t()) :: :ok
@@ -109,14 +109,14 @@ defmodule ExDfa do
          [e | t],
          %__MODULE__{tmp: _tmp, filtered: filtered, map: _map, status: :safe} = st
        ) do
-    with nil <- find(e) do
+    with nil <- String.downcase(e) |> find() do
       do_filter(t, %{st | filtered: filtered <> e})
     else
       :unsafe ->
         do_filter(t, %{st | filtered: filtered <> @mask_char, status: :safe})
 
       data when is_map(data) ->
-        do_filter_check(t, t, %{st | map: data, status: :check, tmp: e, tmp2: e})
+        do_filter_check(t, t, %{st | map: data, status: :check, tmp: e, tmp2: [e]})
     end
   end
 
@@ -128,14 +128,17 @@ defmodule ExDfa do
          %__MODULE__{status: :check, map: map, tmp: tmp, tmp2: tmp2, filtered: filtered} = st
        )
        when is_map(map) do
-    with nil <- Map.get(map, e) do
-      do_filter(ot, %{st | filtered: filtered <> tmp2, tmp: "", tmp2: "", status: :safe})
+    with low_e <- String.downcase(e),
+         nil <- Map.get(map, low_e) do
+      filtered = tmp2 |> Enum.reduce(filtered, &(&1 <> &2))
+      do_filter(ot, %{st | filtered: filtered, tmp: "", tmp2: [], status: :safe})
     else
       :unsafe ->
-        do_filter(t, %__MODULE__{filtered: filtered <> @mask_char})
+        mask = 1..(length(tmp2) + 1) |> Enum.map_join(fn _ -> "*" end)
+        do_filter(t, %__MODULE__{filtered: filtered <> mask})
 
       map when is_map(map) ->
-        do_filter_check(t, ot, %{st | map: map, tmp: tmp <> e, status: :check})
+        do_filter_check(t, ot, %{st | map: map, tmp: tmp <> e, tmp2: [e | tmp2], status: :check})
     end
   end
 end
